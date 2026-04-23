@@ -103,6 +103,32 @@ export const useGameStore = create<GameState>((set, get) => ({
         console.log("The board is full! No room for loot.");
       }
     }
+
+    // --- CONSUME LOGIC: The Max-Level Floor Tile ---
+    if (cell.content === "FloorTile") {
+      // Find the first locked cell on the board
+      const lockedCellIndex = grid.findIndex((c) => c.isLocked);
+
+      if (lockedCellIndex !== -1) {
+        const newGrid = [...grid];
+
+        // 1. Consume the Floor Tile (set content to null)
+        newGrid[targetCellIndex] = {
+          ...cell,
+          content: null,
+        };
+
+        // 2. Unlock the new cell! (Keep its content as Rubble, but make it playable)
+        newGrid[lockedCellIndex] = {
+          ...newGrid[lockedCellIndex],
+          isLocked: false,
+        };
+
+        set({ grid: newGrid });
+      } else {
+        console.log("BOARD CLEARED! V1 COMPLETE!");
+      }
+    }
   },
 
   // --- NEW MERGE LOGIC ---
