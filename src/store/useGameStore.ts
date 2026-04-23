@@ -137,7 +137,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   setDraggedCell: (id) => set({ draggedCellId: id }),
 
   mergeCells: (sourceId, targetId) => {
-    if (sourceId === targetId) return; // Can't merge a tile with itself!
+    if (sourceId === targetId) return; // Can't interact with itself!
 
     const { grid } = get();
     const sourceIndex = grid.findIndex((c) => c.id === sourceId);
@@ -148,32 +148,33 @@ export const useGameStore = create<GameState>((set, get) => ({
     const source = grid[sourceIndex];
     const target = grid[targetIndex];
 
+    // Safety check: We cannot drop items onto locked tiles
+    if (target.isLocked) return;
+
     // The Merge Recipe Book
     const mergeRules: Record<string, ItemType> = {
       FloorTileFragment: "CrackedFloorTile",
       CrackedFloorTile: "FloorTile",
     };
 
-    // Check if both cells have content, the content is identical, AND it's a mergeable type
+    // SCENARIO 1: The Merge (Target has identical, mergeable content)
     if (
       source.content &&
       source.content === target.content &&
       mergeRules[source.content]
     ) {
       const newGrid = [...grid];
-
-      // Upgrade the target cell to the next level
-      newGrid[targetIndex] = {
-        ...target,
-        content: mergeRules[source.content],
-      };
-
-      // Empty out the source cell
-      newGrid[sourceIndex] = {
-        ...source,
-        content: null,
-      };
-
+      newGrid[targetIndex] = { ...target, content: mergeRules[source.content] };
+      newGrid[sourceIndex] = { ...source, content: null };
+      set({ grid: newGrid });
+    }
+    // SCENARIO 2: The Move (Target is completely empty)
+    else if (source.content && target.content === null) {
+      const newGrid = [...grid];
+      // Move the content to the new tile
+      newGrid[targetIndex] = { ...target, content: source.content };
+      // Empty the old tile
+      newGrid[sourceIndex] = { ...source, content: null };
       set({ grid: newGrid });
     }
   },
