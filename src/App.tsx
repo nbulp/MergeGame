@@ -34,24 +34,19 @@ export default function App() {
             key={cell.id}
             onClick={() => actuateCell(cell.x, cell.y)}
             disabled={cell.isLocked}
-            // --- NEW: DRAG AND DROP EVENTS ---
-            // Only allow dragging if it has content, isn't locked, and isn't Rubble
-            draggable={
-              !!cell.content && !cell.isLocked && cell.content !== "Rubble"
-            }
+            // --- UPDATED: All unlocked items with content are draggable! ---
+            draggable={!!cell.content && !cell.isLocked}
             onDragStart={() => setDraggedCell(cell.id)}
             onDragOver={(e) => {
-              e.preventDefault(); // This is required by HTML5 to allow a "drop"
+              e.preventDefault();
             }}
             onDrop={(e) => {
               e.preventDefault();
               if (draggedCellId) {
                 mergeCells(draggedCellId, cell.id);
-                setDraggedCell(null); // Clear the drag state
+                setDraggedCell(null);
               }
             }}
-            // ---------------------------------
-
             className={`
               w-12 h-12 flex items-center justify-center text-xs font-bold rounded
               transition-colors duration-200
@@ -61,8 +56,8 @@ export default function App() {
                   : "bg-neutral-700 border-2 border-neutral-600 hover:bg-neutral-600 cursor-pointer text-white"
               }
               
-              /* Give a visual cue when an item is draggable */
-              ${!!cell.content && cell.content !== "Rubble" && !cell.isLocked ? "cursor-grab active:cursor-grabbing" : ""}
+              /* UPDATED: Visual cue applies to all movable items */
+              ${!!cell.content && !cell.isLocked ? "cursor-grab active:cursor-grabbing" : ""}
             `}
           >
             {/* Our V1 Emoji Dictionary */}
