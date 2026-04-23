@@ -37,7 +37,11 @@ export default function App() {
               }
             `}
           >
-            {cell.content === "Rubble" ? "🧱" : ""}
+            {/* Our V1 Emoji Dictionary */}
+            {cell.content === "Rubble" && "🧱"}
+            {cell.content === "FloorTileFragment" && "🧩"}
+            {cell.content === "CrackedFloorTile" && "🪨"}
+            {cell.content === "FloorTile" && "🟦"}
           </button>
         ))}
       </div>
