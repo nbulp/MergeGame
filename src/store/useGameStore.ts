@@ -19,9 +19,13 @@ export interface Cell {
 
 interface GameState {
   grid: Cell[];
+  draggedCellId: string | null; // <-- NEW: Tracks what we are dragging
+
   // Actions
   initializeBoard: () => void;
   actuateCell: (x: number, y: number) => void;
+  setDraggedCell: (id: string | null) => void; // <-- NEW
+  mergeCells: (sourceId: string, targetId: string) => void; // <-- NEW
 }
 
 // 2. Create the Store
@@ -98,6 +102,53 @@ export const useGameStore = create<GameState>((set, get) => ({
       } else {
         console.log("The board is full! No room for loot.");
       }
+    }
+  },
+
+  // --- NEW MERGE LOGIC ---
+  draggedCellId: null,
+
+  setDraggedCell: (id) => set({ draggedCellId: id }),
+
+  mergeCells: (sourceId, targetId) => {
+    if (sourceId === targetId) return; // Can't merge a tile with itself!
+
+    const { grid } = get();
+    const sourceIndex = grid.findIndex((c) => c.id === sourceId);
+    const targetIndex = grid.findIndex((c) => c.id === targetId);
+
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const source = grid[sourceIndex];
+    const target = grid[targetIndex];
+
+    // The Merge Recipe Book
+    const mergeRules: Record<string, ItemType> = {
+      FloorTileFragment: "CrackedFloorTile",
+      CrackedFloorTile: "FloorTile",
+    };
+
+    // Check if both cells have content, the content is identical, AND it's a mergeable type
+    if (
+      source.content &&
+      source.content === target.content &&
+      mergeRules[source.content]
+    ) {
+      const newGrid = [...grid];
+
+      // Upgrade the target cell to the next level
+      newGrid[targetIndex] = {
+        ...target,
+        content: mergeRules[source.content],
+      };
+
+      // Empty out the source cell
+      newGrid[sourceIndex] = {
+        ...source,
+        content: null,
+      };
+
+      set({ grid: newGrid });
     }
   },
 }));

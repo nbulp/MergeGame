@@ -2,8 +2,15 @@ import { useEffect } from "react";
 import { useGameStore } from "./store/useGameStore";
 
 export default function App() {
-  // 1. Hook into our Zustand store
-  const { grid, initializeBoard, actuateCell } = useGameStore();
+  // Grab our new drag-and-drop tools from the store
+  const {
+    grid,
+    initializeBoard,
+    actuateCell,
+    draggedCellId,
+    setDraggedCell,
+    mergeCells,
+  } = useGameStore();
 
   // 2. Initialize the board when the game first loads
   useEffect(() => {
@@ -27,6 +34,24 @@ export default function App() {
             key={cell.id}
             onClick={() => actuateCell(cell.x, cell.y)}
             disabled={cell.isLocked}
+            // --- NEW: DRAG AND DROP EVENTS ---
+            // Only allow dragging if it has content, isn't locked, and isn't Rubble
+            draggable={
+              !!cell.content && !cell.isLocked && cell.content !== "Rubble"
+            }
+            onDragStart={() => setDraggedCell(cell.id)}
+            onDragOver={(e) => {
+              e.preventDefault(); // This is required by HTML5 to allow a "drop"
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              if (draggedCellId) {
+                mergeCells(draggedCellId, cell.id);
+                setDraggedCell(null); // Clear the drag state
+              }
+            }}
+            // ---------------------------------
+
             className={`
               w-12 h-12 flex items-center justify-center text-xs font-bold rounded
               transition-colors duration-200
@@ -35,6 +60,9 @@ export default function App() {
                   ? "bg-neutral-950 border border-neutral-800/50 cursor-not-allowed text-neutral-700"
                   : "bg-neutral-700 border-2 border-neutral-600 hover:bg-neutral-600 cursor-pointer text-white"
               }
+              
+              /* Give a visual cue when an item is draggable */
+              ${!!cell.content && cell.content !== "Rubble" && !cell.isLocked ? "cursor-grab active:cursor-grabbing" : ""}
             `}
           >
             {/* Our V1 Emoji Dictionary */}
