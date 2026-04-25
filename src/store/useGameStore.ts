@@ -20,13 +20,18 @@ export interface Cell {
 
 interface GameState {
   grid: Cell[];
-  draggedCellId: string | null; // <-- NEW: Tracks what we are dragging
+  draggedCellId: string | null;
+  hoveredCellId: string | null;
+  selectedCellId: string | null;
 
   // Actions
   initializeBoard: () => void;
   actuateCell: (x: number, y: number) => void;
-  setDraggedCell: (id: string | null) => void; // <-- NEW
-  mergeCells: (sourceId: string, targetId: string) => void; // <-- NEW
+  setDraggedCell: (id: string | null) => void;
+  setHoveredCell: (id: string | null) => void;
+  setSelectedCell: (id: string | null) => void;
+  mergeCells: (sourceId: string, targetId: string) => void;
+  resetGame: () => void;
 }
 
 // 2. Create the Store
@@ -139,10 +144,13 @@ export const useGameStore = create<GameState>()(
         }
       },
 
-      // --- NEW MERGE LOGIC ---
       draggedCellId: null,
+      hoveredCellId: null,
+      selectedCellId: null,
 
       setDraggedCell: (id) => set({ draggedCellId: id }),
+      setHoveredCell: (id) => set({ hoveredCellId: id }),
+      setSelectedCell: (id) => set({ selectedCellId: id }),
 
       mergeCells: (sourceId, targetId) => {
         if (sourceId === targetId) return; // Can't interact with itself!
@@ -188,6 +196,13 @@ export const useGameStore = create<GameState>()(
           newGrid[sourceIndex] = { ...source, content: null };
           set({ grid: newGrid });
         }
+      },
+
+      resetGame: () => {
+        // 1. Wipe the current state
+        set({ grid: [], draggedCellId: null, hoveredCellId: null });
+        // 2. Call our own initialize function to build a fresh board instantly
+        get().initializeBoard();
       },
     }),
     {

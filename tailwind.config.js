@@ -2,7 +2,19 @@
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+      },
+      destructive: {
+        DEFAULT: "oklch(var(--destructive) / <alpha-value>)",
+        foreground: "oklch(var(--destructive-foreground) / <alpha-value>)",
+      },
+    },
   },
   plugins: [],
 };
