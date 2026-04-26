@@ -65,7 +65,7 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-950 text-neutral-100 font-mono">
+    <div className="flex flex-col h-[100dvh] bg-neutral-950 text-neutral-100 font-mono overflow-hidden">
       {/* --- TOP BAR (HUD) --- */}
       <header className="flex justify-between items-center px-6 py-4 border-b border-neutral-800 bg-neutral-900/50">
         {/* LEFT: Telemetry */}
