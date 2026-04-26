@@ -1,21 +1,24 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-// 1. Define the exact types for our V1 MVP
+// 1. Added the AnythingGenerator
 export type ItemType =
   | "Rubble"
   | "FloorTileFragment"
   | "CrackedFloorTile"
   | "FloorTile"
+  | "AnythingGenerator"
   | null;
 
 export interface Cell {
-  id: string; // e.g., "cell-0-0"
+  id: string;
   x: number;
   y: number;
   isLocked: boolean;
   content: ItemType;
-  actuationCount: number; // To track the 5 uses of Rubble
+  actuationCount: number;
+  // 2. The configuration memory for our generator
+  generatorOutput?: ItemType;
 }
 
 interface GameState {
@@ -24,7 +27,6 @@ interface GameState {
   hoveredCellId: string | null;
   selectedCellId: string | null;
 
-  // Actions
   initializeBoard: () => void;
   actuateCell: (x: number, y: number) => void;
   setDraggedCell: (id: string | null) => void;
@@ -32,9 +34,12 @@ interface GameState {
   setSelectedCell: (id: string | null) => void;
   mergeCells: (sourceId: string, targetId: string) => void;
   resetGame: () => void;
+
+  // 3. New Actions for V4
+  destroyItem: (cellId: string) => void;
+  updateGeneratorConfig: (cellId: string, output: ItemType) => void;
 }
 
-// 2. Create the Store
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
@@ -42,30 +47,29 @@ export const useGameStore = create<GameState>()(
 
       initializeBoard: () => {
         const { grid } = get();
-        // If the grid already has cells (because it loaded from storage),
-        // do absolutely nothing and let the player continue their game!
         if (grid.length > 0) return;
 
         const newGrid: Cell[] = [];
-        // Build the 7x9 Grid (63 cells)
         for (let y = 0; y < 9; y++) {
           for (let x = 0; x < 7; x++) {
             const index = y * 7 + x;
-
-            // V1 Logic: First 10 cells are free and empty.
             const isFreeArea = index < 10;
-
-            // V1 Logic: Exactly ONE Rubble tile starts unlocked so the player can start playing!
             const isTheFirstRubble = index === 10;
+            const isTheDevGenerator = index === 11; // Place Dev Tool right next to Rubble
 
             newGrid.push({
               id: `cell-${x}-${y}`,
               x,
               y,
-              // It is unlocked if it's in the free area, OR if it's our first Rubble
-              isLocked: !(isFreeArea || isTheFirstRubble),
-              content: isFreeArea ? null : "Rubble",
+              isLocked: !(isFreeArea || isTheFirstRubble || isTheDevGenerator),
+              content: isFreeArea
+                ? null
+                : isTheDevGenerator
+                  ? "AnythingGenerator"
+                  : "Rubble",
               actuationCount: 0,
+              // Default it to generating Floor Tiles
+              generatorOutput: isTheDevGenerator ? "FloorTile" : undefined,
             });
           }
         }
@@ -73,73 +77,65 @@ export const useGameStore = create<GameState>()(
       },
 
       actuateCell: (x, y) => {
-        // We finally use 'get()' to read the current state of the board!
         const { grid } = get();
-
-        // Find the exact cell we clicked
         const targetCellIndex = grid.findIndex((c) => c.x === x && c.y === y);
-        if (targetCellIndex === -1) return; // Safety check
+        if (targetCellIndex === -1) return;
 
         const cell = grid[targetCellIndex];
 
-        // --- GENERATOR LOGIC: The Rubble ---
-        if (cell.content === "Rubble") {
-          // Find the first available empty, unlocked cell to spawn our loot
+        // --- DEV TOOL LOGIC: The Anything Generator ---
+        if (cell.content === "AnythingGenerator") {
           const emptyCellIndex = grid.findIndex(
             (c) => !c.isLocked && c.content === null,
           );
-
-          if (emptyCellIndex !== -1) {
-            // Create a copy of the grid so React knows it's time to re-render
+          if (emptyCellIndex !== -1 && cell.generatorOutput) {
             const newGrid = [...grid];
+            newGrid[emptyCellIndex] = {
+              ...newGrid[emptyCellIndex],
+              content: cell.generatorOutput,
+            };
+            set({ grid: newGrid });
+          } else {
+            console.log("Board full or Generator not configured!");
+          }
+          return; // Stop here, don't run the rest of the logic
+        }
 
-            // 1. Update the Rubble's durability
+        // --- NORMAL GENERATOR LOGIC ---
+        if (cell.content === "Rubble") {
+          const emptyCellIndex = grid.findIndex(
+            (c) => !c.isLocked && c.content === null,
+          );
+          if (emptyCellIndex !== -1) {
+            const newGrid = [...grid];
             const updatedActuationCount = cell.actuationCount + 1;
             const isDepleted = updatedActuationCount >= 5;
 
             newGrid[targetCellIndex] = {
               ...cell,
               actuationCount: updatedActuationCount,
-              // If it hits 5 uses, the Rubble is destroyed (turns to null)
               content: isDepleted ? null : "Rubble",
             };
 
-            // 2. Spawn the Floor Tile Fragment
             newGrid[emptyCellIndex] = {
               ...newGrid[emptyCellIndex],
               content: "FloorTileFragment",
             };
-
-            // Save the new grid to our global state!
             set({ grid: newGrid });
-          } else {
-            console.log("The board is full! No room for loot.");
           }
         }
 
-        // --- CONSUME LOGIC: The Max-Level Floor Tile ---
+        // --- CONSUME LOGIC ---
         if (cell.content === "FloorTile") {
-          // Find the first locked cell on the board
           const lockedCellIndex = grid.findIndex((c) => c.isLocked);
-
           if (lockedCellIndex !== -1) {
             const newGrid = [...grid];
-
-            // 1. Consume the Floor Tile (set content to null)
-            newGrid[targetCellIndex] = {
-              ...cell,
-              content: null,
-            };
-
-            // 2. Unlock the new cell! (Keep its content as Rubble, but make it playable)
+            newGrid[targetCellIndex] = { ...cell, content: null };
             newGrid[lockedCellIndex] = {
               ...newGrid[lockedCellIndex],
               isLocked: false,
             };
-
             set({ grid: newGrid });
-          } else {
-            console.log("BOARD CLEARED! V1 COMPLETE!");
           }
         }
       },
@@ -153,7 +149,7 @@ export const useGameStore = create<GameState>()(
       setSelectedCell: (id) => set({ selectedCellId: id }),
 
       mergeCells: (sourceId, targetId) => {
-        if (sourceId === targetId) return; // Can't interact with itself!
+        if (sourceId === targetId) return;
 
         const { grid } = get();
         const sourceIndex = grid.findIndex((c) => c.id === sourceId);
@@ -164,16 +160,22 @@ export const useGameStore = create<GameState>()(
         const source = grid[sourceIndex];
         const target = grid[targetIndex];
 
-        // Safety check: We cannot drop items onto locked tiles
         if (target.isLocked) return;
 
-        // The Merge Recipe Book
+        // Safety: The Dev Tool cannot be merged, but it CAN be moved to an empty tile.
+        if (
+          target.content !== null &&
+          (source.content === "AnythingGenerator" ||
+            target.content === "AnythingGenerator")
+        ) {
+          return;
+        }
+
         const mergeRules: Record<string, ItemType> = {
           FloorTileFragment: "CrackedFloorTile",
           CrackedFloorTile: "FloorTile",
         };
 
-        // SCENARIO 1: The Merge (Target has identical, mergeable content)
         if (
           source.content &&
           source.content === target.content &&
@@ -186,27 +188,50 @@ export const useGameStore = create<GameState>()(
           };
           newGrid[sourceIndex] = { ...source, content: null };
           set({ grid: newGrid });
-        }
-        // SCENARIO 2: The Move (Target is completely empty)
-        else if (source.content && target.content === null) {
+        } else if (source.content && target.content === null) {
           const newGrid = [...grid];
-          // Move the content to the new tile
           newGrid[targetIndex] = { ...target, content: source.content };
-          // Empty the old tile
           newGrid[sourceIndex] = { ...source, content: null };
           set({ grid: newGrid });
         }
       },
 
+      // --- NEW DESTRUCTION LOGIC ---
+      destroyItem: (cellId) => {
+        const { grid } = get();
+        const targetIndex = grid.findIndex((c) => c.id === cellId);
+        if (targetIndex !== -1) {
+          const newGrid = [...grid];
+          newGrid[targetIndex] = { ...newGrid[targetIndex], content: null };
+          // If we destroyed the selected/hovered item, clear the selection
+          if (get().selectedCellId === cellId) set({ selectedCellId: null });
+          set({ grid: newGrid });
+        }
+      },
+
+      updateGeneratorConfig: (cellId, output) => {
+        const { grid } = get();
+        const targetIndex = grid.findIndex((c) => c.id === cellId);
+        if (targetIndex !== -1) {
+          const newGrid = [...grid];
+          newGrid[targetIndex] = {
+            ...newGrid[targetIndex],
+            generatorOutput: output,
+          };
+          set({ grid: newGrid });
+        }
+      },
+
       resetGame: () => {
-        // 1. Wipe the current state
-        set({ grid: [], draggedCellId: null, hoveredCellId: null });
-        // 2. Call our own initialize function to build a fresh board instantly
+        set({
+          grid: [],
+          draggedCellId: null,
+          hoveredCellId: null,
+          selectedCellId: null,
+        });
         get().initializeBoard();
       },
     }),
-    {
-      name: "merge-game-storage", // This is the secret key saved in your browser
-    },
+    { name: "merge-game-storage" },
   ),
 );
