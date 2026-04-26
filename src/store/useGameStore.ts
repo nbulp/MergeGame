@@ -19,6 +19,59 @@ export interface Cell {
   generatorOutput?: ItemType;
 }
 
+// Helper function to find the nearest concentric empty cell
+function findNearestEmptyCell(
+  grid: Cell[],
+  startX: number,
+  startY: number,
+  boardWidth: number,
+  boardHeight: number,
+): number {
+  // Safety Check 1: Is the board completely full? Don't even try to search.
+  if (!grid.some((c) => !c.isLocked && c.content === null)) return -1;
+
+  // Safety Check 2: Cap the search so it doesn't run infinitely.
+  // The max radius needed to cover the board from ANY point is the larger of the two dimensions.
+  const maxRadius = Math.max(boardWidth, boardHeight);
+
+  // Expand the search ring by ring
+  for (let r = 1; r <= maxRadius; r++) {
+    const candidates: { x: number; y: number }[] = [];
+
+    // 1. Right Edge (Starting right, moving down)
+    for (let dy = -r + 1; dy <= r; dy++)
+      candidates.push({ x: startX + r, y: startY + dy });
+    // 2. Bottom Edge (Moving left)
+    for (let dx = r - 1; dx >= -r; dx--)
+      candidates.push({ x: startX + dx, y: startY + r });
+    // 3. Left Edge (Moving up)
+    for (let dy = r - 1; dy >= -r; dy--)
+      candidates.push({ x: startX - r, y: startY + dy });
+    // 4. Top Edge (Moving right to close the loop)
+    for (let dx = -r + 1; dx <= r; dx++)
+      candidates.push({ x: startX + dx, y: startY - r });
+
+    // Test the generated coordinates for this ring
+    for (const pos of candidates) {
+      // Ignore coordinates that fall off the edges of the board
+      if (pos.x < 0 || pos.x >= boardWidth || pos.y < 0 || pos.y >= boardHeight)
+        continue;
+
+      // Check if the cell at this coordinate is empty and unlocked
+      const index = grid.findIndex((c) => c.x === pos.x && c.y === pos.y);
+      if (
+        index !== -1 &&
+        !grid[index].isLocked &&
+        grid[index].content === null
+      ) {
+        return index; // We found the perfect spot!
+      }
+    }
+  }
+
+  return -1; // Fallback if nothing was found
+}
+
 interface GameState {
   grid: Cell[];
 
@@ -137,8 +190,12 @@ export const useGameStore = create<GameState>()(
         const cell = grid[targetCellIndex];
 
         if (cell.content === "AnythingGenerator") {
-          const emptyCellIndex = grid.findIndex(
-            (c) => !c.isLocked && c.content === null,
+          const emptyCellIndex = findNearestEmptyCell(
+            grid,
+            cell.x,
+            cell.y,
+            get().boardWidth,
+            get().boardHeight,
           );
           if (emptyCellIndex !== -1 && cell.generatorOutput) {
             const newGrid = [...grid];
@@ -152,8 +209,12 @@ export const useGameStore = create<GameState>()(
         }
 
         if (cell.content === "Rubble") {
-          const emptyCellIndex = grid.findIndex(
-            (c) => !c.isLocked && c.content === null,
+          const emptyCellIndex = findNearestEmptyCell(
+            grid,
+            cell.x,
+            cell.y,
+            get().boardWidth,
+            get().boardHeight,
           );
           if (emptyCellIndex !== -1) {
             const newGrid = [...grid];
