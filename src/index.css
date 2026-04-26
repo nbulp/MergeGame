@@ -89,3 +89,11 @@
     @apply font-sans;
   }
 }
+
+/* --- MOBILE DRAG POLYFILL OVERRIDES --- */
+.dnd-poly-drag-image {
+  transition: none !important;
+  animation: none !important;
+  opacity: 0.8 !important; /* Makes it slightly see-through so you can see the board */
+  pointer-events: none !important; /* THE FIX: Makes the ghost "click-through" */
+}

@@ -184,6 +184,7 @@ function App() {
                   setDraggedCell(cell.id);
                   setSelectedCell(cell.id); // <-- THE FIX: Auto-select on grab!
                 }}
+                onDragEnter={(e) => e.preventDefault()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -195,7 +196,7 @@ function App() {
                 onMouseEnter={() => setHoveredCell(cell.id)}
                 onMouseLeave={() => setHoveredCell(null)}
                 className={`
-                  w-14 h-14 flex items-center justify-center text-xl rounded-md transition-all duration-200 shadow-sm
+                  w-14 h-14 flex items-center justify-center text-xl rounded-md transition-all duration-200 shadow-sm touch-none select-none
                   ${cell.isLocked ? "bg-neutral-950/50 border border-neutral-800/50 text-neutral-800" : "bg-neutral-800 border-2 border-neutral-700 hover:bg-neutral-700 text-white"}
                   ${!!cell.content && !cell.isLocked ? "active:cursor-grabbing" : ""}
                   ${isSelected ? "ring-2 ring-offset-2 ring-offset-neutral-900 ring-emerald-500 scale-105 z-10" : ""}
@@ -223,6 +224,7 @@ function App() {
 
         {/* RIGHT: Destruction Section */}
         <div
+          onDragEnter={(e) => e.preventDefault()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
