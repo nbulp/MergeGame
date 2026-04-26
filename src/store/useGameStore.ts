@@ -284,6 +284,7 @@ export const useGameStore = create<GameState>()(
           CrackedFloorTile: "FloorTile",
         };
 
+        // SCENARIO 1: The Merge
         if (
           source.content &&
           source.content === target.content &&
@@ -293,13 +294,38 @@ export const useGameStore = create<GameState>()(
           newGrid[targetIndex] = {
             ...target,
             content: mergeRules[source.content],
+            actuationCount: 0, // A newly merged item should have fresh stats
+            generatorOutput: undefined,
           };
-          newGrid[sourceIndex] = { ...source, content: null };
+          newGrid[sourceIndex] = {
+            ...source,
+            content: null,
+            actuationCount: 0,
+            generatorOutput: undefined,
+          };
           set({ grid: newGrid, selectedCellId: targetId });
-        } else if (source.content && target.content === null) {
+        }
+
+        // SCENARIO 2: The Move (The Fix!)
+        else if (source.content && target.content === null) {
           const newGrid = [...grid];
-          newGrid[targetIndex] = { ...target, content: source.content };
-          newGrid[sourceIndex] = { ...source, content: null };
+
+          // 1. Move the name tag AND the backpack to the new tile
+          newGrid[targetIndex] = {
+            ...target,
+            content: source.content,
+            actuationCount: source.actuationCount,
+            generatorOutput: source.generatorOutput,
+          };
+
+          // 2. Completely wipe the old tile clean
+          newGrid[sourceIndex] = {
+            ...source,
+            content: null,
+            actuationCount: 0,
+            generatorOutput: undefined,
+          };
+
           set({ grid: newGrid, selectedCellId: targetId });
         }
       },
