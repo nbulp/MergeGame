@@ -187,12 +187,14 @@ export const useGameStore = create<GameState>()(
             content: mergeRules[source.content],
           };
           newGrid[sourceIndex] = { ...source, content: null };
-          set({ grid: newGrid });
+          // THE FIX: Move the selection to the new target cell!
+          set({ grid: newGrid, selectedCellId: targetId });
         } else if (source.content && target.content === null) {
           const newGrid = [...grid];
           newGrid[targetIndex] = { ...target, content: source.content };
           newGrid[sourceIndex] = { ...source, content: null };
-          set({ grid: newGrid });
+          // THE FIX: Move the selection to the new target cell!
+          set({ grid: newGrid, selectedCellId: targetId });
         }
       },
 
