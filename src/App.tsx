@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useGameStore, type ItemType } from "./store/useGameStore";
-import { Settings, Trash2, Wrench } from "lucide-react";
+import { Settings, Trash2, Wrench, Hand, MousePointer2 } from "lucide-react";
 import { Button } from "./components/ui/button";
 import {
   Dialog,
@@ -21,7 +21,15 @@ import {
 function App() {
   const {
     grid,
+    boardWidth,
+    boardHeight,
+    colorA,
+    colorB,
+    isPanMode,
     initializeBoard,
+    resetBoardToDefault,
+    updateSettings,
+    togglePanMode,
     actuateCell,
     draggedCellId,
     setDraggedCell,
@@ -30,7 +38,6 @@ function App() {
     selectedCellId,
     setSelectedCell,
     mergeCells,
-    resetGame,
     destroyItem,
     updateGeneratorConfig,
   } = useGameStore();
@@ -40,9 +47,23 @@ function App() {
 
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-  useEffect(() => {
-    initializeBoard();
-  }, [initializeBoard]);
+  // V6 Settings Temporary State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempWidth, setTempWidth] = useState(boardWidth);
+  const [tempHeight, setTempHeight] = useState(boardHeight);
+  const [tempColorA, setTempColorA] = useState(colorA);
+  const [tempColorB, setTempColorB] = useState(colorB);
+
+  // When opening settings, pre-fill with current values
+  const handleOpenSettings = (open: boolean) => {
+    setIsSettingsOpen(open);
+    if (open) {
+      setTempWidth(boardWidth);
+      setTempHeight(boardHeight);
+      setTempColorA(colorA);
+      setTempColorB(colorB);
+    }
+  };
 
   const activeCellId = selectedCellId || hoveredCellId;
   const activeCell = grid.find((c) => c.id === activeCellId);
@@ -75,6 +96,18 @@ function App() {
 
         {/* RIGHT: Item Actions Section */}
         <div className="flex items-center gap-3">
+          {/* V6: PAN MODE TOGGLE */}
+          <button
+            onClick={togglePanMode}
+            className={`flex items-center justify-center p-2 rounded-md transition-colors ${isPanMode ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/50" : "hover:bg-neutral-800 text-neutral-400"}`}
+            title="Toggle Pan Mode"
+          >
+            {isPanMode ? (
+              <Hand className="w-5 h-5" />
+            ) : (
+              <MousePointer2 className="w-5 h-5" />
+            )}
+          </button>
           {/* CONFIG MODAL (Only shows if AnythingGenerator is selected) */}
           {selectedCellId && activeCell?.content === "AnythingGenerator" && (
             <Dialog
@@ -136,9 +169,8 @@ function App() {
               </DialogContent>
             </Dialog>
           )}
-
           {/* MAIN SETTINGS MODAL */}
-          <Dialog>
+          <Dialog open={isSettingsOpen} onOpenChange={handleOpenSettings}>
             <DialogTrigger className="flex items-center justify-center p-2 rounded-md hover:bg-neutral-800 text-neutral-400 transition-colors">
               <Settings className="w-5 h-5" />
             </DialogTrigger>
@@ -151,10 +183,108 @@ function App() {
                   Manage your expedition parameters.
                 </DialogDescription>
               </DialogHeader>
-              <div className="pt-4 flex justify-end">
-                <Button variant="destructive" onClick={resetGame}>
-                  INITIATE BOARD RESET
-                </Button>
+
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      BOARD WIDTH (Max 30)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={tempWidth}
+                      onChange={(e) =>
+                        setTempWidth(
+                          Math.min(30, Math.max(1, Number(e.target.value))),
+                        )
+                      }
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      BOARD HEIGHT (Max 30)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={tempHeight}
+                      onChange={(e) =>
+                        setTempHeight(
+                          Math.min(30, Math.max(1, Number(e.target.value))),
+                        )
+                      }
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      COLOR A
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempColorA}
+                        onChange={(e) => setTempColorA(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempColorA}
+                        onChange={(e) => setTempColorA(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      COLOR B
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempColorB}
+                        onChange={(e) => setTempColorB(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempColorB}
+                        onChange={(e) => setTempColorB(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-4 border-t border-neutral-800">
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      resetBoardToDefault();
+                      setIsSettingsOpen(false);
+                    }}
+                  >
+                    V1 FACTORY RESET
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => {
+                      updateSettings(
+                        tempWidth,
+                        tempHeight,
+                        tempColorA,
+                        tempColorB,
+                      );
+                      setIsSettingsOpen(false);
+                    }}
+                  >
+                    SAVE PARAMETERS
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>
@@ -162,44 +292,62 @@ function App() {
       </header>
 
       {/* --- CENTER STAGE (THE GAME) --- */}
-      <main className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+      {/* V6: If Pan Mode is on, we allow overflow and scrolling. Otherwise, we hide it. */}
+      {/* V6: Removed dangerous flex centering */}
+      <main
+        className={`flex-1 flex p-4 ${isPanMode ? "overflow-auto" : "overflow-hidden"}`}
+      >
         <div
-          className="grid p-3 bg-neutral-900/80 rounded-xl border border-neutral-800 shadow-2xl"
+          className="m-auto grid p-3 bg-neutral-900/80 rounded-xl border border-neutral-800 shadow-2xl transition-all duration-300"
           style={{
-            gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+            gridTemplateColumns: `repeat(${boardWidth}, max-content)`,
             gap: "6px",
           }}
         >
           {grid.map((cell) => {
             const isSelected = selectedCellId === cell.id;
+
+            // V6 Checkered Math
+            const isColorA = (cell.x + cell.y) % 2 === 0;
+            const cellBgColor = cell.isLocked
+              ? "#000000"
+              : isColorA
+                ? colorA
+                : colorB;
+
             return (
               <button
                 key={cell.id}
+                style={{ backgroundColor: cellBgColor }}
                 onClick={() => {
+                  if (isPanMode) return; // Do nothing if panning
                   if (isSelected && !cell.isLocked) actuateCell(cell.x, cell.y);
                   else setSelectedCell(cell.id);
                 }}
-                draggable={!!cell.content && !cell.isLocked}
+                draggable={!isPanMode && !!cell.content && !cell.isLocked}
                 onDragStart={() => {
+                  if (isPanMode) return;
                   setDraggedCell(cell.id);
-                  setSelectedCell(cell.id); // <-- THE FIX: Auto-select on grab!
+                  setSelectedCell(cell.id);
                 }}
                 onDragEnter={(e) => e.preventDefault()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
+                  if (isPanMode) return;
                   e.preventDefault();
                   if (draggedCellId) {
                     mergeCells(draggedCellId, cell.id);
                     setDraggedCell(null);
                   }
                 }}
-                onMouseEnter={() => setHoveredCell(cell.id)}
-                onMouseLeave={() => setHoveredCell(null)}
+                onMouseEnter={() => !isPanMode && setHoveredCell(cell.id)}
+                onMouseLeave={() => !isPanMode && setHoveredCell(null)}
                 className={`
-                  w-14 h-14 flex items-center justify-center text-xl rounded-md transition-all duration-200 shadow-sm touch-none select-none
-                  ${cell.isLocked ? "bg-neutral-950/50 border border-neutral-800/50 text-neutral-800" : "bg-neutral-800 border-2 border-neutral-700 hover:bg-neutral-700 text-white"}
-                  ${!!cell.content && !cell.isLocked ? "active:cursor-grabbing" : ""}
-                  ${isSelected ? "ring-2 ring-offset-2 ring-offset-neutral-900 ring-emerald-500 scale-105 z-10" : ""}
+                  w-14 h-14 flex items-center justify-center text-xl rounded-md transition-all duration-200 shadow-sm
+                  ${isPanMode ? "cursor-grab" : "touch-none select-none"}
+                  ${cell.isLocked ? "border border-neutral-800/50 text-neutral-800 opacity-50" : "border border-neutral-800/50 text-white"}
+                  ${!isPanMode && !!cell.content && !cell.isLocked ? "active:cursor-grabbing hover:brightness-110" : ""}
+                  ${isSelected && !isPanMode ? "ring-2 ring-offset-2 ring-offset-neutral-900 ring-emerald-500 scale-105 z-10" : ""}
                 `}
               >
                 {cell.content === "Rubble" && "🧱"}
