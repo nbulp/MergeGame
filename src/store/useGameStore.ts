@@ -86,6 +86,9 @@ interface GameState {
   mergeCells: (sourceId: string, targetId: string) => void;
   destroyItem: (cellId: string) => void;
   updateGeneratorConfig: (cellId: string, output: ItemType) => void;
+
+  exportSaveCode: () => string;
+  importSaveCode: (code: string) => boolean;
 }
 
 export const useGameStore = create<GameState>()(
@@ -195,6 +198,40 @@ export const useGameStore = create<GameState>()(
           invColorB: invB,
         });
         get().initializeBoard();
+      },
+
+      // Add these right below your updateSettings function
+      exportSaveCode: () => {
+        const state = get();
+        // Cherry-pick only the data we want to save
+        const saveData = {
+          grid: state.grid,
+          inventory: state.inventory,
+          boardWidth: state.boardWidth,
+          boardHeight: state.boardHeight,
+          colorA: state.colorA,
+          colorB: state.colorB,
+          invCapacity: state.invCapacity,
+          invColorA: state.invColorA,
+          invColorB: state.invColorB,
+          isPanMode: state.isPanMode,
+        };
+        // Convert to a JSON string, then encode to Base64
+        return btoa(JSON.stringify(saveData));
+      },
+
+      importSaveCode: (code) => {
+        try {
+          // Decode from Base64, then parse the JSON string
+          const parsedData = JSON.parse(atob(code));
+
+          // Push the parsed data directly into the global state
+          set(parsedData);
+          return true; // Success!
+        } catch (error) {
+          console.error("Failed to parse save code.", error);
+          return false; // Failed
+        }
       },
 
       togglePanMode: () => set((state) => ({ isPanMode: !state.isPanMode })),

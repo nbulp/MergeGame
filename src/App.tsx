@@ -44,6 +44,8 @@ function App() {
     mergeCells,
     destroyItem,
     updateGeneratorConfig,
+    exportSaveCode,
+    importSaveCode,
   } = useGameStore();
 
   const [tempConfigSelection, setTempConfigSelection] =
@@ -335,33 +337,73 @@ function App() {
                   </div>
                 </div>
 
-                <div className="flex justify-between pt-4 border-t border-neutral-800 mt-4">
-                  <Button
-                    variant="destructive"
-                    onClick={() => {
-                      resetBoardToDefault();
-                      setIsSettingsOpen(false);
-                    }}
-                  >
-                    V1 FACTORY RESET
-                  </Button>
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                    onClick={() => {
-                      updateSettings(
-                        tempWidth,
-                        tempHeight,
-                        tempColorA,
-                        tempColorB,
-                        tempInvCap,
-                        tempInvA,
-                        tempInvB,
-                      );
-                      setIsSettingsOpen(false);
-                    }}
-                  >
-                    SAVE PARAMETERS
-                  </Button>
+                {/* --- SETTINGS MODAL FOOTER --- */}
+                <div className="flex flex-col gap-3 pt-4 border-t border-neutral-800 mt-4">
+                  {/* DATA MANAGEMENT ROW */}
+                  <div className="flex justify-between gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                      onClick={() => {
+                        const code = exportSaveCode();
+                        navigator.clipboard.writeText(code);
+                        alert(
+                          "SAVE CODE COPIED TO CLIPBOARD!\n\nSave this text somewhere safe, or send it to another device.",
+                        );
+                      }}
+                    >
+                      EXPORT SAVE CODE
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+                      onClick={() => {
+                        const code = prompt("PASTE YOUR SAVE CODE HERE:");
+                        if (code) {
+                          const success = importSaveCode(code);
+                          if (success) {
+                            alert("SAVE RESTORED SUCCESSFULLY!");
+                            setIsSettingsOpen(false); // Close modal to show the restored board
+                          } else {
+                            alert("ERROR: INVALID SAVE CODE.");
+                          }
+                        }
+                      }}
+                    >
+                      IMPORT SAVE CODE
+                    </Button>
+                  </div>
+
+                  {/* APPLY / RESET ROW */}
+                  <div className="flex justify-between gap-2">
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => {
+                        resetBoardToDefault();
+                        setIsSettingsOpen(false);
+                      }}
+                    >
+                      V1 FACTORY RESET
+                    </Button>
+                    <Button
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      onClick={() => {
+                        updateSettings(
+                          tempWidth,
+                          tempHeight,
+                          tempColorA,
+                          tempColorB,
+                          tempInvCap,
+                          tempInvA,
+                          tempInvB,
+                        );
+                        setIsSettingsOpen(false);
+                      }}
+                    >
+                      APPLY CHANGES
+                    </Button>
+                  </div>
                 </div>
               </div>
             </DialogContent>
