@@ -200,37 +200,33 @@ export const useGameStore = create<GameState>()(
         get().initializeBoard();
       },
 
-      // Add these right below your updateSettings function
       exportSaveCode: () => {
-        const state = get();
-        // Cherry-pick only the data we want to save
-        const saveData = {
-          grid: state.grid,
-          inventory: state.inventory,
-          boardWidth: state.boardWidth,
-          boardHeight: state.boardHeight,
-          colorA: state.colorA,
-          colorB: state.colorB,
-          invCapacity: state.invCapacity,
-          invColorA: state.invColorA,
-          invColorB: state.invColorB,
-          isPanMode: state.isPanMode,
-        };
-        // Convert to a JSON string, then encode to Base64
-        return btoa(JSON.stringify(saveData));
+        const fullState = get();
+
+        // FUTURE-PROOFING: Automatically grab everything that IS NOT a function
+        const dataOnlyState = Object.fromEntries(
+          Object.entries(fullState).filter(
+            ([key, value]) => typeof value !== "function",
+          ),
+        );
+
+        return btoa(JSON.stringify(dataOnlyState));
       },
 
       importSaveCode: (code) => {
         try {
-          // Decode from Base64, then parse the JSON string
           const parsedData = JSON.parse(atob(code));
 
-          // Push the parsed data directly into the global state
+          // Zustand's set() function is incredibly smart.
+          // It only overwrites the exact keys you pass it.
+          // Because parsedData only contains data variables (no functions),
+          // it overwrites the board/inventory but leaves all your game logic untouched!
           set(parsedData);
-          return true; // Success!
+
+          return true;
         } catch (error) {
           console.error("Failed to parse save code.", error);
-          return false; // Failed
+          return false;
         }
       },
 
