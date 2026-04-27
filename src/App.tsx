@@ -26,9 +26,13 @@ function App() {
     boardHeight,
     colorA,
     colorB,
+    boardGridColor,
     invCapacity,
     invColorA,
     invColorB,
+    invGridColor,
+    appBgColor,
+    uiBgColor,
     isPanMode, // V8: Pulled new settings out
     resetBoardToDefault,
     updateSettings,
@@ -62,6 +66,12 @@ function App() {
   const [tempInvA, setTempInvA] = useState(invColorA);
   const [tempInvB, setTempInvB] = useState(invColorB);
 
+  const [tempAppBg, setTempAppBg] = useState(appBgColor);
+  const [tempUiBg, setTempUiBg] = useState(uiBgColor);
+
+  const [tempBoardGrid, setTempBoardGrid] = useState(boardGridColor);
+  const [tempInvGrid, setTempInvGrid] = useState(invGridColor);
+
   const handleOpenSettings = (open: boolean) => {
     setIsSettingsOpen(open);
     if (open) {
@@ -72,6 +82,10 @@ function App() {
       setTempInvCap(invCapacity);
       setTempInvA(invColorA);
       setTempInvB(invColorB);
+      setTempAppBg(appBgColor);
+      setTempUiBg(uiBgColor);
+      setTempBoardGrid(boardGridColor);
+      setTempInvGrid(invGridColor);
     }
   };
 
@@ -96,9 +110,15 @@ function App() {
   };
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-neutral-950 text-neutral-100 font-mono overflow-hidden">
+    <div
+      className="flex flex-col h-[100dvh] text-neutral-100 font-mono overflow-hidden"
+      style={{ backgroundColor: appBgColor }}
+    >
       {/* --- TOP BAR (HUD) --- */}
-      <header className="flex justify-between items-center px-6 py-4 border-b border-neutral-800 bg-neutral-900/50">
+      <header
+        className="h-16 border-b border-neutral-800 flex items-center justify-between px-4"
+        style={{ backgroundColor: uiBgColor }}
+      >
         {/* LEFT: Telemetry */}
         <div className="text-sm font-bold text-emerald-500 tracking-widest transition-all duration-300">
           {telemetryText}
@@ -274,6 +294,26 @@ function App() {
                     </div>
                   </div>
 
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      GRID GROUT
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempBoardGrid}
+                        onChange={(e) => setTempBoardGrid(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempBoardGrid}
+                        onChange={(e) => setTempBoardGrid(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+
                   {/* INVENTORY SETTINGS */}
                   <div className="col-span-2 text-emerald-500 font-bold text-xs uppercase tracking-widest border-b border-neutral-800 pb-1 mt-2">
                     Dock Parameters
@@ -334,6 +374,70 @@ function App() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      DOCK GROUT
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempInvGrid}
+                        onChange={(e) => setTempInvGrid(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempInvGrid}
+                        onChange={(e) => setTempInvGrid(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* TERMINAL THEME SETTINGS */}
+                <div className="col-span-2 text-emerald-500 font-bold text-xs uppercase tracking-widest border-b border-neutral-800 pb-1 mt-2">
+                  Terminal Theme
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-neutral-400">
+                    APP BACKGROUND
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={tempAppBg}
+                      onChange={(e) => setTempAppBg(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={tempAppBg}
+                      onChange={(e) => setTempAppBg(e.target.value)}
+                      className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-neutral-400">
+                    UI PANELS
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={tempUiBg}
+                      onChange={(e) => setTempUiBg(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={tempUiBg}
+                      onChange={(e) => setTempUiBg(e.target.value)}
+                      className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                    />
+                  </div>
                 </div>
 
                 {/* --- SETTINGS MODAL FOOTER --- */}
@@ -393,9 +497,13 @@ function App() {
                           tempHeight,
                           tempColorA,
                           tempColorB,
+                          tempBoardGrid,
                           tempInvCap,
                           tempInvA,
                           tempInvB,
+                          tempInvGrid,
+                          tempAppBg,
+                          tempUiBg,
                         );
                         setIsSettingsOpen(false);
                       }}
@@ -416,11 +524,14 @@ function App() {
       <main
         className={`flex-1 flex p-4 ${isPanMode ? "overflow-auto" : "overflow-hidden"}`}
       >
+        {/* GAME BOARD CONTAINER */}
         <div
-          className="m-auto grid p-3 bg-neutral-900/80 rounded-xl border border-neutral-800 shadow-2xl transition-all duration-300"
+          className="m-auto grid p-3 rounded-xl border shadow-2xl transition-all duration-300"
           style={{
             gridTemplateColumns: `repeat(${boardWidth}, max-content)`,
             gap: "6px",
+            backgroundColor: boardGridColor, // NEW
+            borderColor: boardGridColor, // NEW
           }}
         >
           {grid.map((cell) => {
@@ -481,11 +592,20 @@ function App() {
       </main>
 
       {/* --- BOTTOM BAR (THE DOCK) --- */}
-      <footer className="h-24 border-t border-neutral-800 bg-neutral-900/50 flex">
+      <footer
+        className="h-24 border-t border-neutral-800 flex"
+        style={{ backgroundColor: uiBgColor }}
+      >
         {/* LEFT: Functional Inventory */}
         <div className="flex-1 flex items-center p-4 overflow-x-auto">
-          {/* THE FIX 2: Added 'm-auto' to safely center the dock */}
-          <div className="flex gap-2 p-2 bg-neutral-950/50 rounded-xl border border-neutral-800/80 shadow-inner m-auto">
+          {/* INVENTORY DOCK CONTAINER */}
+          <div
+            className="flex gap-2 p-2 rounded-xl border shadow-inner m-auto transition-all"
+            style={{
+              backgroundColor: invGridColor, // NEW
+              borderColor: invGridColor, // NEW
+            }}
+          >
             {inventory.map((cell) => {
               const isSelected = selectedCellId === cell.id;
               const isColorA = cell.x % 2 === 0; // Simple horizontal alternating math

@@ -58,9 +58,13 @@ interface GameState {
   boardHeight: number;
   colorA: string;
   colorB: string;
+  boardGridColor: string; // NEW
   invCapacity: number; // V8 Setting
   invColorA: string; // V8 Setting
   invColorB: string; // V8 Setting
+  invGridColor: string; // NEW
+  appBgColor: string; // NEW
+  uiBgColor: string; // NEW
   isPanMode: boolean;
 
   draggedCellId: string | null;
@@ -74,9 +78,13 @@ interface GameState {
     h: number,
     cA: string,
     cB: string,
+    bGrid: string,
     invCap: number,
     invA: string,
     invB: string,
+    iGrid: string,
+    appBg: string,
+    uiBg: string,
   ) => void;
   togglePanMode: () => void;
   actuateCell: (x: number, y: number) => void;
@@ -101,9 +109,13 @@ export const useGameStore = create<GameState>()(
       boardHeight: 9,
       colorA: "#262626",
       colorB: "#171717",
+      boardGridColor: "#171717", // NEW: Matches Tailwind neutral-900
       invCapacity: 5,
       invColorA: "#1e3a8a", // Default to dark blue hues to separate it from the board
       invColorB: "#172554",
+      invGridColor: "#0a0a0a", // NEW: Matches Tailwind neutral-950
+      appBgColor: "#0a0a0a", // Default Tailwind neutral-950
+      uiBgColor: "#171717", // Default Tailwind neutral-900
       isPanMode: false,
 
       initializeBoard: () => {
@@ -187,15 +199,31 @@ export const useGameStore = create<GameState>()(
         });
       },
 
-      updateSettings: (w, h, cA, cB, invCap, invA, invB) => {
+      updateSettings: (
+        w,
+        h,
+        cA,
+        cB,
+        bGrid,
+        invCap,
+        invA,
+        invB,
+        iGrid,
+        appBg,
+        uiBg,
+      ) => {
         set({
           boardWidth: w,
           boardHeight: h,
           colorA: cA,
           colorB: cB,
+          boardGridColor: bGrid,
           invCapacity: invCap,
           invColorA: invA,
           invColorB: invB,
+          invGridColor: iGrid,
+          appBgColor: appBg,
+          uiBgColor: uiBg, // NEW
         });
         get().initializeBoard();
       },
