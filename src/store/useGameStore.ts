@@ -19,7 +19,6 @@ export interface Cell {
   generatorOutput?: ItemType;
 }
 
-// Helper function to find the nearest concentric empty cell
 function findNearestEmptyCell(
   grid: Cell[],
   startX: number,
@@ -27,76 +26,59 @@ function findNearestEmptyCell(
   boardWidth: number,
   boardHeight: number,
 ): number {
-  // Safety Check 1: Is the board completely full? Don't even try to search.
   if (!grid.some((c) => !c.isLocked && c.content === null)) return -1;
-
-  // Safety Check 2: Cap the search so it doesn't run infinitely.
-  // The max radius needed to cover the board from ANY point is the larger of the two dimensions.
   const maxRadius = Math.max(boardWidth, boardHeight);
-
-  // Expand the search ring by ring
   for (let r = 1; r <= maxRadius; r++) {
     const candidates: { x: number; y: number }[] = [];
-
-    // 1. Right Edge (Starting right, moving down)
     for (let dy = -r + 1; dy <= r; dy++)
       candidates.push({ x: startX + r, y: startY + dy });
-    // 2. Bottom Edge (Moving left)
     for (let dx = r - 1; dx >= -r; dx--)
       candidates.push({ x: startX + dx, y: startY + r });
-    // 3. Left Edge (Moving up)
     for (let dy = r - 1; dy >= -r; dy--)
       candidates.push({ x: startX - r, y: startY + dy });
-    // 4. Top Edge (Moving right to close the loop)
     for (let dx = -r + 1; dx <= r; dx++)
       candidates.push({ x: startX + dx, y: startY - r });
-
-    // Test the generated coordinates for this ring
     for (const pos of candidates) {
-      // Ignore coordinates that fall off the edges of the board
       if (pos.x < 0 || pos.x >= boardWidth || pos.y < 0 || pos.y >= boardHeight)
         continue;
-
-      // Check if the cell at this coordinate is empty and unlocked
       const index = grid.findIndex((c) => c.x === pos.x && c.y === pos.y);
-      if (
-        index !== -1 &&
-        !grid[index].isLocked &&
-        grid[index].content === null
-      ) {
-        return index; // We found the perfect spot!
-      }
+      if (index !== -1 && !grid[index].isLocked && grid[index].content === null)
+        return index;
     }
   }
-
-  return -1; // Fallback if nothing was found
+  return -1;
 }
 
 interface GameState {
   grid: Cell[];
+  inventory: Cell[]; // V8: The new container
 
-  // V6 Settings
+  // Settings
   boardWidth: number;
   boardHeight: number;
   colorA: string;
   colorB: string;
+  invCapacity: number; // V8 Setting
+  invColorA: string; // V8 Setting
+  invColorB: string; // V8 Setting
   isPanMode: boolean;
 
   draggedCellId: string | null;
   hoveredCellId: string | null;
   selectedCellId: string | null;
 
-  // Actions
   initializeBoard: () => void;
-  resetBoardToDefault: () => void; // The new V1 legacy reset
+  resetBoardToDefault: () => void;
   updateSettings: (
-    width: number,
-    height: number,
+    w: number,
+    h: number,
     cA: string,
     cB: string,
+    invCap: number,
+    invA: string,
+    invB: string,
   ) => void;
   togglePanMode: () => void;
-
   actuateCell: (x: number, y: number) => void;
   setDraggedCell: (id: string | null) => void;
   setHoveredCell: (id: string | null) => void;
@@ -110,18 +92,21 @@ export const useGameStore = create<GameState>()(
   persist(
     (set, get) => ({
       grid: [],
+      inventory: [],
 
-      // Default V6 Settings
       boardWidth: 7,
       boardHeight: 9,
-      colorA: "#262626", // Tailwind neutral-800
-      colorB: "#171717", // Tailwind neutral-900
+      colorA: "#262626",
+      colorB: "#171717",
+      invCapacity: 5,
+      invColorA: "#1e3a8a", // Default to dark blue hues to separate it from the board
+      invColorB: "#172554",
       isPanMode: false,
 
-      // NEW BEHAVIOR: Clears the board and drops 1 Dev Tool at 0,0 based on current W/H settings
       initializeBoard: () => {
-        const { boardWidth, boardHeight } = get();
+        const { boardWidth, boardHeight, invCapacity } = get();
         const newGrid: Cell[] = [];
+        const newInventory: Cell[] = [];
 
         for (let y = 0; y < boardHeight; y++) {
           for (let x = 0; x < boardWidth; x++) {
@@ -137,10 +122,22 @@ export const useGameStore = create<GameState>()(
             });
           }
         }
-        set({ grid: newGrid });
+
+        // V8: Initialize Inventory Slots
+        for (let i = 0; i < invCapacity; i++) {
+          newInventory.push({
+            id: `inv-${i}`,
+            x: i,
+            y: 0,
+            isLocked: false,
+            content: null,
+            actuationCount: 0,
+          });
+        }
+
+        set({ grid: newGrid, inventory: newInventory });
       },
 
-      // OLD BEHAVIOR: Forces a 7x9 board with the V1 starter layout
       resetBoardToDefault: () => {
         const newGrid: Cell[] = [];
         for (let y = 0; y < 9; y++) {
@@ -149,7 +146,6 @@ export const useGameStore = create<GameState>()(
             const isFreeArea = index < 10;
             const isTheFirstRubble = index === 10;
             const isTheDevGenerator = index === 11;
-
             newGrid.push({
               id: `cell-${x}-${y}`,
               x,
@@ -165,19 +161,40 @@ export const useGameStore = create<GameState>()(
             });
           }
         }
+
+        // Build 5 default slots for factory reset
+        const newInventory: Cell[] = Array.from({ length: 5 }).map((_, i) => ({
+          id: `inv-${i}`,
+          x: i,
+          y: 0,
+          isLocked: false,
+          content: null,
+          actuationCount: 0,
+        }));
+
         set({
           grid: newGrid,
+          inventory: newInventory,
           boardWidth: 7,
           boardHeight: 9,
+          invCapacity: 5,
           draggedCellId: null,
           hoveredCellId: null,
           selectedCellId: null,
         });
       },
 
-      updateSettings: (width, height, cA, cB) => {
-        set({ boardWidth: width, boardHeight: height, colorA: cA, colorB: cB });
-        get().initializeBoard(); // Rebuild the board immediately with new dimensions
+      updateSettings: (w, h, cA, cB, invCap, invA, invB) => {
+        set({
+          boardWidth: w,
+          boardHeight: h,
+          colorA: cA,
+          colorB: cB,
+          invCapacity: invCap,
+          invColorA: invA,
+          invColorB: invB,
+        });
+        get().initializeBoard();
       },
 
       togglePanMode: () => set((state) => ({ isPanMode: !state.isPanMode })),
@@ -218,15 +235,12 @@ export const useGameStore = create<GameState>()(
           );
           if (emptyCellIndex !== -1) {
             const newGrid = [...grid];
-            const updatedActuationCount = cell.actuationCount + 1;
-            const isDepleted = updatedActuationCount >= 5;
-
+            const isDepleted = cell.actuationCount + 1 >= 5;
             newGrid[targetCellIndex] = {
               ...cell,
-              actuationCount: updatedActuationCount,
+              actuationCount: cell.actuationCount + 1,
               content: isDepleted ? null : "Rubble",
             };
-
             newGrid[emptyCellIndex] = {
               ...newGrid[emptyCellIndex],
               content: "FloorTileFragment",
@@ -252,92 +266,126 @@ export const useGameStore = create<GameState>()(
       draggedCellId: null,
       hoveredCellId: null,
       selectedCellId: null,
-
       setDraggedCell: (id) => set({ draggedCellId: id }),
       setHoveredCell: (id) => set({ hoveredCellId: id }),
       setSelectedCell: (id) => set({ selectedCellId: id }),
 
+      // V8: The Engine Upgrade (Cross-Container Routing)
       mergeCells: (sourceId, targetId) => {
         if (sourceId === targetId) return;
 
-        const { grid } = get();
-        const sourceIndex = grid.findIndex((c) => c.id === sourceId);
-        const targetIndex = grid.findIndex((c) => c.id === targetId);
+        const { grid, inventory } = get();
+
+        // Route the source and target to the correct arrays based on ID prefix
+        const sourceIsInv = sourceId.startsWith("inv-");
+        const targetIsInv = targetId.startsWith("inv-");
+
+        const sourceArray = sourceIsInv ? inventory : grid;
+        const targetArray = targetIsInv ? inventory : grid;
+
+        const sourceIndex = sourceArray.findIndex((c) => c.id === sourceId);
+        const targetIndex = targetArray.findIndex((c) => c.id === targetId);
 
         if (sourceIndex === -1 || targetIndex === -1) return;
 
-        const source = grid[sourceIndex];
-        const target = grid[targetIndex];
+        const source = sourceArray[sourceIndex];
+        const target = targetArray[targetIndex];
 
         if (target.isLocked) return;
-
         if (
           target.content !== null &&
           (source.content === "AnythingGenerator" ||
             target.content === "AnythingGenerator")
-        ) {
+        )
           return;
-        }
 
-        const mergeRules: Record<string, ItemType> = {
-          FloorTileFragment: "CrackedFloorTile",
-          CrackedFloorTile: "FloorTile",
-        };
+        // V8 RULE: Items cannot be merged in the inventory. If the target is in the inventory AND full, abort.
+        if (targetIsInv && target.content !== null) return;
 
-        // SCENARIO 1: The Merge
-        if (
-          source.content &&
-          source.content === target.content &&
-          mergeRules[source.content]
-        ) {
-          const newGrid = [...grid];
-          newGrid[targetIndex] = {
-            ...target,
-            content: mergeRules[source.content],
-            actuationCount: 0, // A newly merged item should have fresh stats
-            generatorOutput: undefined,
-          };
-          newGrid[sourceIndex] = {
-            ...source,
-            content: null,
-            actuationCount: 0,
-            generatorOutput: undefined,
-          };
-          set({ grid: newGrid, selectedCellId: targetId });
-        }
+        const newGrid = [...grid];
+        const newInventory = [...inventory];
 
-        // SCENARIO 2: The Move (The Fix!)
-        else if (source.content && target.content === null) {
-          const newGrid = [...grid];
-
-          // 1. Move the name tag AND the backpack to the new tile
-          newGrid[targetIndex] = {
+        // SCENARIO 1: The Move (Target is completely empty)
+        if (source.content && target.content === null) {
+          const updatedTarget = {
             ...target,
             content: source.content,
             actuationCount: source.actuationCount,
             generatorOutput: source.generatorOutput,
           };
-
-          // 2. Completely wipe the old tile clean
-          newGrid[sourceIndex] = {
+          const updatedSource = {
             ...source,
             content: null,
             actuationCount: 0,
             generatorOutput: undefined,
           };
 
-          set({ grid: newGrid, selectedCellId: targetId });
+          if (sourceIsInv) newInventory[sourceIndex] = updatedSource;
+          else newGrid[sourceIndex] = updatedSource;
+          if (targetIsInv) newInventory[targetIndex] = updatedTarget;
+          else newGrid[targetIndex] = updatedTarget;
+
+          set({
+            grid: newGrid,
+            inventory: newInventory,
+            selectedCellId: targetId,
+          });
+        }
+        // SCENARIO 2: The Merge (Requires Identical Items & Target is on Grid)
+        else if (
+          !targetIsInv &&
+          source.content &&
+          source.content === target.content
+        ) {
+          const mergeRules: Record<string, ItemType> = {
+            FloorTileFragment: "CrackedFloorTile",
+            CrackedFloorTile: "FloorTile",
+          };
+          if (mergeRules[source.content]) {
+            const updatedTarget = {
+              ...target,
+              content: mergeRules[source.content],
+              actuationCount: 0,
+              generatorOutput: undefined,
+            };
+            const updatedSource = {
+              ...source,
+              content: null,
+              actuationCount: 0,
+              generatorOutput: undefined,
+            };
+
+            if (sourceIsInv) newInventory[sourceIndex] = updatedSource;
+            else newGrid[sourceIndex] = updatedSource;
+            newGrid[targetIndex] = updatedTarget;
+
+            set({
+              grid: newGrid,
+              inventory: newInventory,
+              selectedCellId: targetId,
+            });
+          }
         }
       },
 
       destroyItem: (cellId) => {
-        const { grid } = get();
-        const targetIndex = grid.findIndex((c) => c.id === cellId);
+        const { grid, inventory } = get();
+        const isInv = cellId.startsWith("inv-");
+        const targetArray = isInv ? inventory : grid;
+        const targetIndex = targetArray.findIndex((c) => c.id === cellId);
+
         if (targetIndex !== -1) {
-          const newGrid = [...grid];
-          newGrid[targetIndex] = { ...newGrid[targetIndex], content: null };
+          const newArray = [...targetArray];
+          newArray[targetIndex] = {
+            ...newArray[targetIndex],
+            content: null,
+            actuationCount: 0,
+            generatorOutput: undefined,
+          };
           if (get().selectedCellId === cellId) set({ selectedCellId: null });
-          set({ grid: newGrid });
+
+          if (isInv) set({ inventory: newArray });
+          else set({ grid: newArray });
         }
       },
 

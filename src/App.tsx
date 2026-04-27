@@ -21,11 +21,15 @@ import {
 function App() {
   const {
     grid,
+    inventory,
     boardWidth,
     boardHeight,
     colorA,
     colorB,
-    isPanMode,
+    invCapacity,
+    invColorA,
+    invColorB,
+    isPanMode, // V8: Pulled new settings out
     initializeBoard,
     resetBoardToDefault,
     updateSettings,
@@ -44,17 +48,19 @@ function App() {
 
   const [tempConfigSelection, setTempConfigSelection] =
     useState<ItemType | null>(null);
-
   const [isConfigOpen, setIsConfigOpen] = useState(false);
 
-  // V6 Settings Temporary State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [tempWidth, setTempWidth] = useState(boardWidth);
   const [tempHeight, setTempHeight] = useState(boardHeight);
   const [tempColorA, setTempColorA] = useState(colorA);
   const [tempColorB, setTempColorB] = useState(colorB);
 
-  // When opening settings, pre-fill with current values
+  // V8: Temp settings for Inventory
+  const [tempInvCap, setTempInvCap] = useState(invCapacity);
+  const [tempInvA, setTempInvA] = useState(invColorA);
+  const [tempInvB, setTempInvB] = useState(invColorB);
+
   const handleOpenSettings = (open: boolean) => {
     setIsSettingsOpen(open);
     if (open) {
@@ -62,6 +68,9 @@ function App() {
       setTempHeight(boardHeight);
       setTempColorA(colorA);
       setTempColorB(colorB);
+      setTempInvCap(invCapacity);
+      setTempInvA(invColorA);
+      setTempInvB(invColorB);
     }
   };
 
@@ -184,11 +193,16 @@ function App() {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 py-4 max-h-[70vh] overflow-auto px-1">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                  {/* BOARD SETTINGS */}
+                  <div className="col-span-2 text-emerald-500 font-bold text-xs uppercase tracking-widest border-b border-neutral-800 pb-1">
+                    Board Parameters
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-neutral-400">
-                      BOARD WIDTH (Max 30)
+                      WIDTH (Max 30)
                     </label>
                     <input
                       type="number"
@@ -205,7 +219,7 @@ function App() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-neutral-400">
-                      BOARD HEIGHT (Max 30)
+                      HEIGHT (Max 30)
                     </label>
                     <input
                       type="number"
@@ -258,9 +272,70 @@ function App() {
                       />
                     </div>
                   </div>
+
+                  {/* INVENTORY SETTINGS */}
+                  <div className="col-span-2 text-emerald-500 font-bold text-xs uppercase tracking-widest border-b border-neutral-800 pb-1 mt-2">
+                    Dock Parameters
+                  </div>
+
+                  <div className="col-span-2 space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      SLOT CAPACITY (1-7)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="7"
+                      value={tempInvCap}
+                      onChange={(e) =>
+                        setTempInvCap(
+                          Math.min(7, Math.max(1, Number(e.target.value))),
+                        )
+                      }
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      SLOT COLOR A
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempInvA}
+                        onChange={(e) => setTempInvA(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempInvA}
+                        onChange={(e) => setTempInvA(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-neutral-400">
+                      SLOT COLOR B
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={tempInvB}
+                        onChange={(e) => setTempInvB(e.target.value)}
+                        className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={tempInvB}
+                        onChange={(e) => setTempInvB(e.target.value)}
+                        className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex justify-between pt-4 border-t border-neutral-800">
+                <div className="flex justify-between pt-4 border-t border-neutral-800 mt-4">
                   <Button
                     variant="destructive"
                     onClick={() => {
@@ -278,6 +353,9 @@ function App() {
                         tempHeight,
                         tempColorA,
                         tempColorB,
+                        tempInvCap,
+                        tempInvA,
+                        tempInvB,
                       );
                       setIsSettingsOpen(false);
                     }}
@@ -363,11 +441,52 @@ function App() {
 
       {/* --- BOTTOM BAR (THE DOCK) --- */}
       <footer className="h-24 border-t border-neutral-800 bg-neutral-900/50 flex">
-        {/* LEFT: Inventory */}
-        <div className="flex-1 flex items-center justify-center">
-          <span className="text-xs text-neutral-600 tracking-[0.2em] font-bold uppercase">
-            Inventory Module Offline
-          </span>
+        {/* LEFT: Functional Inventory */}
+        <div className="flex-1 flex items-center p-4 overflow-x-auto">
+          {/* THE FIX 2: Added 'm-auto' to safely center the dock */}
+          <div className="flex gap-2 p-2 bg-neutral-950/50 rounded-xl border border-neutral-800/80 shadow-inner m-auto">
+            {inventory.map((cell) => {
+              const isSelected = selectedCellId === cell.id;
+              const isColorA = cell.x % 2 === 0; // Simple horizontal alternating math
+              const slotBgColor = isColorA ? invColorA : invColorB;
+
+              return (
+                <button
+                  key={cell.id}
+                  style={{ backgroundColor: slotBgColor }}
+                  onClick={() => setSelectedCell(cell.id)} // V8: Selection ONLY. No Actuation.
+                  draggable={!!cell.content}
+                  onDragStart={() => {
+                    setDraggedCell(cell.id);
+                    setSelectedCell(cell.id);
+                  }}
+                  onDragEnter={(e) => e.preventDefault()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedCellId) {
+                      mergeCells(draggedCellId, cell.id);
+                      setDraggedCell(null);
+                    }
+                  }}
+                  onMouseEnter={() => setHoveredCell(cell.id)}
+                  onMouseLeave={() => setHoveredCell(null)}
+                  className={`
+                    w-12 h-12 flex items-center justify-center text-lg rounded-md transition-all duration-200 shadow-sm
+                    border border-neutral-800/50 text-white flex-shrink-0
+                    ${!!cell.content ? "active:cursor-grabbing hover:brightness-110 cursor-grab" : ""}
+                    ${isSelected ? "ring-2 ring-offset-2 ring-offset-neutral-900 ring-emerald-500 scale-110 z-10" : ""}
+                  `}
+                >
+                  {cell.content === "Rubble" && "🧱"}
+                  {cell.content === "FloorTileFragment" && "🧩"}
+                  {cell.content === "CrackedFloorTile" && "🪨"}
+                  {cell.content === "FloorTile" && "🟦"}
+                  {cell.content === "AnythingGenerator" && "⚙️"}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* RIGHT: Destruction Section */}
