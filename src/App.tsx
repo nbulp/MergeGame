@@ -32,7 +32,8 @@ function App() {
     invColorB,
     invGridColor,
     appBgColor,
-    uiBgColor,
+    topBarBgColor,
+    bottomBarBgColor,
     isPanMode, // V8: Pulled new settings out
     resetBoardToDefault,
     updateSettings,
@@ -67,7 +68,8 @@ function App() {
   const [tempInvB, setTempInvB] = useState(invColorB);
 
   const [tempAppBg, setTempAppBg] = useState(appBgColor);
-  const [tempUiBg, setTempUiBg] = useState(uiBgColor);
+  const [tempTopBarBg, setTempTopBarBg] = useState(topBarBgColor); // REPLACED tempUiBg
+  const [tempBottomBarBg, setTempBottomBarBg] = useState(bottomBarBgColor); // REPLACED tempUiBg
 
   const [tempBoardGrid, setTempBoardGrid] = useState(boardGridColor);
   const [tempInvGrid, setTempInvGrid] = useState(invGridColor);
@@ -83,7 +85,8 @@ function App() {
       setTempInvA(invColorA);
       setTempInvB(invColorB);
       setTempAppBg(appBgColor);
-      setTempUiBg(uiBgColor);
+      setTempTopBarBg(topBarBgColor); // REPLACED tempUiBg
+      setTempBottomBarBg(bottomBarBgColor); // REPLACED tempUiBg
       setTempBoardGrid(boardGridColor);
       setTempInvGrid(invGridColor);
     }
@@ -117,7 +120,7 @@ function App() {
       {/* --- TOP BAR (HUD) --- */}
       <header
         className="h-16 border-b border-neutral-800 flex items-center justify-between px-4"
-        style={{ backgroundColor: uiBgColor }}
+        style={{ backgroundColor: topBarBgColor }}
       >
         {/* LEFT: Telemetry */}
         <div className="text-sm font-bold text-emerald-500 tracking-widest transition-all duration-300">
@@ -422,19 +425,38 @@ function App() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-neutral-400">
-                    UI PANELS
+                    TOP BAR
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="color"
-                      value={tempUiBg}
-                      onChange={(e) => setTempUiBg(e.target.value)}
+                      value={tempTopBarBg}
+                      onChange={(e) => setTempTopBarBg(e.target.value)}
                       className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
                     />
                     <input
                       type="text"
-                      value={tempUiBg}
-                      onChange={(e) => setTempUiBg(e.target.value)}
+                      value={tempTopBarBg}
+                      onChange={(e) => setTempTopBarBg(e.target.value)}
+                      className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-neutral-400">
+                    BOTTOM BAR
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="color"
+                      value={tempBottomBarBg}
+                      onChange={(e) => setTempBottomBarBg(e.target.value)}
+                      className="w-10 h-10 rounded cursor-pointer bg-transparent border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={tempBottomBarBg}
+                      onChange={(e) => setTempBottomBarBg(e.target.value)}
                       className="flex-1 bg-neutral-950 border border-neutral-800 rounded px-3 py-2 text-white text-xs uppercase"
                     />
                   </div>
@@ -503,7 +525,8 @@ function App() {
                           tempInvB,
                           tempInvGrid,
                           tempAppBg,
-                          tempUiBg,
+                          tempTopBarBg,
+                          tempBottomBarBg,
                         );
                         setIsSettingsOpen(false);
                       }}
@@ -594,7 +617,7 @@ function App() {
       {/* --- BOTTOM BAR (THE DOCK) --- */}
       <footer
         className="h-24 border-t border-neutral-800 flex"
-        style={{ backgroundColor: uiBgColor }}
+        style={{ backgroundColor: bottomBarBgColor }}
       >
         {/* LEFT: Functional Inventory */}
         <div className="flex-1 flex items-center p-4 overflow-x-auto">

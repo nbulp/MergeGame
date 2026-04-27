@@ -64,7 +64,8 @@ interface GameState {
   invColorB: string; // V8 Setting
   invGridColor: string; // NEW
   appBgColor: string; // NEW
-  uiBgColor: string; // NEW
+  topBarBgColor: string; // REPLACED uiBgColor
+  bottomBarBgColor: string; // REPLACED uiBgColor
   isPanMode: boolean;
 
   draggedCellId: string | null;
@@ -84,7 +85,8 @@ interface GameState {
     invB: string,
     iGrid: string,
     appBg: string,
-    uiBg: string,
+    topBg: string,
+    bottomBg: string,
   ) => void;
   togglePanMode: () => void;
   actuateCell: (x: number, y: number) => void;
@@ -115,7 +117,8 @@ export const useGameStore = create<GameState>()(
       invColorB: "#172554",
       invGridColor: "#0a0a0a", // NEW: Matches Tailwind neutral-950
       appBgColor: "#0a0a0a", // Default Tailwind neutral-950
-      uiBgColor: "#171717", // Default Tailwind neutral-900
+      topBarBgColor: "#171717", // REPLACED uiBgColor
+      bottomBarBgColor: "#171717", // REPLACED uiBgColor
       isPanMode: false,
 
       initializeBoard: () => {
@@ -210,7 +213,8 @@ export const useGameStore = create<GameState>()(
         invB,
         iGrid,
         appBg,
-        uiBg,
+        topBg,
+        bottomBg,
       ) => {
         set({
           boardWidth: w,
@@ -223,7 +227,8 @@ export const useGameStore = create<GameState>()(
           invColorB: invB,
           invGridColor: iGrid,
           appBgColor: appBg,
-          uiBgColor: uiBg, // NEW
+          topBarBgColor: topBg,
+          bottomBarBgColor: bottomBg, // REPLACED uiBgColor
         });
         get().initializeBoard();
       },
