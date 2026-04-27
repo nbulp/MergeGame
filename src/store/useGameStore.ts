@@ -206,7 +206,7 @@ export const useGameStore = create<GameState>()(
         // FUTURE-PROOFING: Automatically grab everything that IS NOT a function
         const dataOnlyState = Object.fromEntries(
           Object.entries(fullState).filter(
-            ([key, value]) => typeof value !== "function",
+            ([, value]) => typeof value !== "function",
           ),
         );
 

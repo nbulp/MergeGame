@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useGameStore, type ItemType } from "./store/useGameStore";
 import { Settings, Trash2, Wrench, Hand, MousePointer2 } from "lucide-react";
 import { Button } from "./components/ui/button";
@@ -30,7 +30,6 @@ function App() {
     invColorA,
     invColorB,
     isPanMode, // V8: Pulled new settings out
-    initializeBoard,
     resetBoardToDefault,
     updateSettings,
     togglePanMode,
@@ -516,7 +515,7 @@ function App() {
                   className={`
                     w-12 h-12 flex items-center justify-center text-lg rounded-md transition-all duration-200 shadow-sm
                     border border-neutral-800/50 text-white flex-shrink-0
-                    ${!!cell.content ? "active:cursor-grabbing hover:brightness-110 cursor-grab" : ""}
+                    ${cell.content ? "active:cursor-grabbing hover:brightness-110 cursor-grab" : ""}
                     ${isSelected ? "ring-2 ring-offset-2 ring-offset-neutral-900 ring-emerald-500 scale-110 z-10" : ""}
                   `}
                 >
